@@ -186,31 +186,283 @@ Below summarizes the major cleaning, transformation, and normalization tasks app
 ---
 
 
-##  Key DAX Measures
+##  DAX Measures
 
-```DAX
-// Revenue KPIs
-Revenue := SUM(Products[SalePrice])
-Revenue Goal := 300000
-Revenue Goal Attainment % := DIVIDE([Revenue], [Revenue Goal])
-Revenue Gap ($) := [Revenue] - [Revenue Goal]
+```
+### Core totals
 
-// Product Composition
-% Premium Products := 
-    DIVIDE(CALCULATE([Total Products], Products[Price Tier] = "Premium"), [Total Products])
+Total Products        = COUNT ( Products[ProductName] )
+Total Reviews         = COUNTROWS ( 'Reviews 1' )
+Total Feedback        = SUM ( 'Reviews 1'[FeedbackCount] )
+Total Retail          = SUM ( Products[RetailPrice] )
+Total Sale            = SUM ( Products[SalePrice] )
+Anchor Date           = MAX ( 'Reviews 1'[SubmissionTime] )
 
-Revenue Contribution by Tier % :=
-VAR _total = CALCULATE([Revenue], ALL(Products[Price Tier]))
-RETURN DIVIDE([Revenue], _total)
+### Ratings: distribution, averages, sentiment
+1 star                = CALCULATE ( [Total Reviews], KEEPFILTERS ( 'Reviews 1'[AvgRating] = 1 ) )
+2 star                = CALCULATE ( [Total Reviews], KEEPFILTERS ( 'Reviews 1'[AvgRating] = 2 ) )
+3 star                = CALCULATE ( [Total Reviews], KEEPFILTERS ( 'Reviews 1'[AvgRating] = 3 ) )
+4 star                = CALCULATE ( [Total Reviews], KEEPFILTERS ( 'Reviews 1'[AvgRating] = 4 ) )
+5 star                = CALCULATE ( [Total Reviews], KEEPFILTERS ( 'Reviews 1'[AvgRating] = 5 ) )
 
-// Sentiment
-% Products Mostly Positive :=
+4+ Star Reviews       = [4 star] + [5 star]
+% 4+ Star             = DIVIDE ( [4+ Star Reviews], [Total Reviews] )
+
+Avg Rating            = AVERAGE ( 'Reviews 1'[AvgRating] )
+Median Rating         = MEDIAN ( 'Reviews 1'[AvgRating] )
+Rating Std Dev        = STDEV.P ( 'Reviews 1'[AvgRating] )
+
+% Positive Sentiment  = DIVIDE (
+                           CALCULATE ( [Total Reviews], FILTER ( 'Reviews 1', 'Reviews 1'[PosReviewCount] > 0 ) ),
+                           [Total Reviews]
+                       )
+
+% Negative Sentiment  = DIVIDE (
+                           CALCULATE ( [Total Reviews], FILTER ( 'Reviews 1', 'Reviews 1'[NegReviewCount] > 0 ) ),
+                           [Total Reviews]
+                       )
+
+Avg Review Length     = AVERAGEX ( 'Reviews 1', LEN ( 'Reviews 1'[Text] ) )
+Avg Feedback per Review = AVERAGE ( 'Reviews 1'[FeedbackCount] )
+Repeat Reviews        = 
+VAR t = ADDCOLUMNS ( VALUES ( 'Reviews 1'[WriterID] ), "ReviewCount", CALCULATE ( COUNTROWS ( 'Reviews 1' ) ) )
+RETURN COUNTROWS ( FILTER ( t, [ReviewCount] > 1 ) )
+
+% Repeat Reviewers    = DIVIDE ( [Repeat Reviews], DISTINCTCOUNT ( 'Reviews 1'[WriterID] ) )
+
+% Recommended         = DIVIDE (
+                           CALCULATE ( COUNTROWS ( 'Reviews 1' ), FILTER ( 'Reviews 1', 'Reviews 1'[IsRecommended?] = TRUE () ) ),
+                           COUNTROWS ( 'Reviews 1' )
+                       )
+
+% Helpful             = DIVIDE (
+                           CALCULATE ( COUNTROWS ( 'Reviews 1' ), FILTER ( 'Reviews 1', 'Reviews 1'[IsHelpful?] = TRUE () ) ),
+                           COUNTROWS ( 'Reviews 1' )
+                       )
+
+Avg Reviews per Product = DIVIDE ( [Total Reviews], [Total Products] )
+
+### Product status / features
+
+% Online Only         = DIVIDE ( CALCULATE ( COUNTROWS ( Products ), Products[OnlineOnly?] = TRUE () ), COUNTROWS ( Products ) )
+% Sephora Exclusive   = DIVIDE ( CALCULATE ( COUNTROWS ( Products ), Products[SephoraExclusive?] = TRUE () ), COUNTROWS ( Products ) )
+% Limited Edition     = DIVIDE ( CALCULATE ( COUNTROWS ( Products ), Products[LimitedEdition?] = TRUE () ), COUNTROWS ( Products ) )
+% Out of Stock        = DIVIDE ( CALCULATE ( COUNTROWS ( Products ), Products[OutOfStock?] = TRUE () ), COUNTROWS ( Products ) )
+Active Products with Reviews = DISTINCTCOUNT ( 'Reviews 1'[ProductID] )
+% Products with Reviews     = DIVIDE ( [Active Products with Reviews], [Total Products] )
+
+### Pricing & discounting
+
+Average Retail Price  = AVERAGE ( Products[RetailPrice] )
+Average Sale Price    = AVERAGE ( Products[SalePrice] )
+Median Retail Price   = MEDIAN ( Products[RetailPrice] )
+Median Sale Price     = MEDIAN ( Products[SalePrice] )
+Min Sale Price        = CALCULATE ( MIN ( Products[SalePrice] ), ALL ( Products ) )
+Overall Max Price     = CALCULATE ( MAX ( Products[SalePrice] ), ALL ( Products ) )
+Overall Min Price     = CALCULATE ( MIN ( Products[SalePrice] ), ALL ( Products ) )
+Overall Avg Price     = CALCULATE ( AVERAGE ( Products[SalePrice] ), ALL ( Products ) )
+
+Avg Discount          = AVERAGE ( Products[DiscountAmount] )
+Avg Discount (Budget) = CALCULATE ( [Avg Discount], KEEPFILTERS ( Products[Price Tier] = "Budget" ) )
+Avg Discount (Premium)= CALCULATE ( [Avg Discount], KEEPFILTERS ( Products[Price Tier] = "Premium" ) )
+Avg Discount (Limited Edition) =
+    CALCULATE ( [Avg Discount], KEEPFILTERS ( Products[LimitedEdition?] = TRUE () ) )
+
+Savings = 
+SUMX (
+    FILTER ( Products, NOT ISBLANK ( Products[DiscountAmount] ) ),
+    Products[DiscountAmount]
+)
+
+Avg Loves per Product = AVERAGE ( Products[LovesCount] )
+Overall Loves per Product = CALCULATE ( AVERAGE ( Products[LovesCount] ), ALL ( Products ) )
+
+Price Range           = [Overall Max Price] - [Overall Min Price]
+Avg Price Range       = AVERAGE ( Products[PriceRange] )
+
+Avg Variant Price Spread =
+VAR ProdRows =
+    FILTER ( VALUES ( Products[ProductID] ),
+        NOT ISBLANK ( MAX ( Products[VariantMaxPrice] ) )
+        || NOT ISBLANK ( MAX ( Products[VariantMinPrice] ) )
+    )
+RETURN
+    AVERAGEX ( ProdRows, MAX ( Products[VariantMaxPrice] ) - MAX ( Products[VariantMinPrice] ) )
+
+Price Tier =
+VAR price = CALCULATE ( MAX ( Products[SalePrice] ) )
+RETURN
+    SWITCH ( TRUE (),
+        price < 25, "Budget",
+        price >= 25 && price <= 60, "Mid-Range",
+        price > 60, "Premium",
+        "Unclassified"
+    )
+
+High-End Product =
+IF ( [Average Sale Price] > 100, "Premium", "Regular" )
+
+### Category / brand summaries
+
+Average Price by Category =
+AVERAGEX ( VALUES ( Products[FirstCategory] ), CALCULATE ( AVERAGE ( Products[SalePrice] ) ) )
+
+Revenue                       = 
+VAR sale  = CALCULATE ( MAX ( Products[SalePrice] ) )
+VAR retail= CALCULATE ( MAX ( Products[RetailPrice] ) )
+RETURN IF ( NOT ISBLANK ( sale ), sale, retail )
+
+Revenue by Brand              = SUMX ( VALUES ( Products[BrandName] ), [Revenue] )
+Revenue by Category           = SUMX ( VALUES ( Products[FirstCategory] ), [Revenue] )
+
+Avg Revenue per Brand         = DIVIDE ( [Revenue], DISTINCTCOUNT ( Products[BrandID] ) )
+Avg Revenue per Product       = DIVIDE ( [Revenue], [Total Products] )
+
+Brand Rank (Revenue) =
+VAR BrandRank =
+    RANKX ( ALL ( Products[BrandName] ), [Revenue by Category], , DESC )
+RETURN IF ( BrandRank <= 10, 1, 0 )
+
+Top 10 Brands Revenue % =
+VAR BrandRevTable =
+    SUMMARIZE ( ALLSELECTED ( Products[BrandName] ), Products[BrandName], "_Rev", [Revenue] )
+VAR TopRev   = MAXX ( TOPN ( 10, BrandRevTable, [_Rev], DESC ), [_Rev] )
+VAR TotalRev = SUMX ( BrandRevTable, [_Rev] )
+RETURN DIVIDE ( TopRev, TotalRev )
+
+Top Brand Share % =
 VAR T =
-  ADDCOLUMNS(
-    VALUES(Products[ProductID]),
-    "Pos", CALCULATE(SUM('Reviews 1'[PosReviewCount])),
-    "Neg", CALCULATE(SUM('Reviews 1'[NegReviewCount]))
-  )
-VAR T_Valid = FILTER(T, [Pos] + [Neg] > 0)
-RETURN DIVIDE(COUNTROWS(FILTER(T_Valid, [Pos] > [Neg])), COUNTROWS(T_Valid))
+    SUMMARIZE ( ALLSELECTED ( Products[BrandID] ), "Rev", [Revenue] )
+VAR Top = MAXX ( TOPN ( 1, T, [Rev], DESC ), [Rev] )
+VAR Total = SUMX ( T, [Rev] )
+RETURN DIVIDE ( Top, Total )
+
+### Discount targets / gaps
+
+Target Category =
+IF (
+    HASONEVALUE ( Products[FirstCategory] ),
+    VALUES ( Products[FirstCategory] ),
+    "All Categories"
+)
+
+Target Discount % =
+SWITCH (
+    TRUE (),
+    CONTAINSSTRING ( SELECTEDVALUE ( Products[FirstCategory] ), "Bath & Body" ), 0.35,
+    SELECTEDVALUE ( Products[FirstCategory] ) = "Fragrance",                          0.20,
+    SELECTEDVALUE ( Products[FirstCategory] ) = "Gifts",                               0.40,
+    SELECTEDVALUE ( Products[FirstCategory] ) = "Hair",                                0.25,
+    0.30
+)
+
+Discount % (Weighted) =
+DIVIDE ( [Savings], [Total Retail] )
+
+Discount Gap to Target =
+VAR gap = [Discount % (Weighted)] - [Target Discount %]
+RETURN IF ( gap >= 0, "On/Above Target", "Below Target" )
+
+% Budget / Mass Products =
+DIVIDE (
+    CALCULATE ( [Total Products], Products[Price Tier] IN { "Budget", "Mass" } ),
+    [Total Products]
+)
+
+% Midrange = DIVIDE ( CALCULATE ( [Total Products], Products[Price Tier] = "Midrange" ), [Total Products] )
+% Premium  = DIVIDE ( CALCULATE ( [Total Products], Products[Price Tier] = "Premium"  ), [Total Products] )
+
+### “Goal” framing (revenue)
+
+Revenue Goal =
+VAR cat =
+    IF (
+        HASONEVALUE ( Products[FirstCategory] ),
+        VALUES ( Products[FirstCategory] ),
+        "All"
+    )
+RETURN
+SWITCH (
+    TRUE (),
+    cat = "Bath & Body", 0.35 * [Revenue],
+    cat = "Fragrance",   0.20 * [Revenue],
+    cat = "Gifts",       0.40 * [Revenue],
+    cat = "Hair",        0.25 * [Revenue],
+    0.30 * [Revenue]
+)
+
+Revenue Goal Attainment % = DIVIDE ( [Revenue], [Revenue Goal] )
+Revenue Gap                = [Revenue] - [Revenue Goal]
+Revenue Remaining          = MAX ( 0, [Revenue Goal] - [Revenue] )
+Revenue to Goal            = DIVIDE ( [Revenue], [Revenue Goal] )
+
+Review-to-Product Ratio    = DIVIDE ( [Total Reviews], [Total Products] )
+Reviews per Product        = DIVIDE ( [Total Reviews], [Total Products] )
+
+### “Products mostly +/-” helpers (binning by review mix)
+
+% Products Mostly Positive =
+VAR T_Valid =
+    FILTER (
+        ADDCOLUMNS (
+            VALUES ( Products[ProductID] ),
+            "Pos", CALCULATE ( SUM ( 'Reviews 1'[PosReviewCount] ) ),
+            "Neg", CALCULATE ( SUM ( 'Reviews 1'[NegReviewCount] ) )
+        ),
+        [Pos] + [Neg] > 0
+    )
+RETURN
+DIVIDE ( COUNTROWS ( FILTER ( T_Valid, [Pos] > [Neg] ) ), [Total Products] )
+
+% Products Mostly Negative =
+VAR T_Valid =
+    FILTER (
+        ADDCOLUMNS (
+            VALUES ( Products[ProductID] ),
+            "Pos", CALCULATE ( SUM ( 'Reviews 1'[PosReviewCount] ) ),
+            "Neg", CALCULATE ( SUM ( 'Reviews 1'[NegReviewCount] ) )
+        ),
+        [Pos] + [Neg] > 0
+    )
+RETURN
+DIVIDE ( COUNTROWS ( FILTER ( T_Valid, [Neg] > [Pos] ) ), [Total Products] )
+
+### “Above/below median price” share
+
+% Products Above Median =
+VAR _med =
+    MEDIANX (
+        FILTER ( ALLSELECTED ( Products ), NOT ISBLANK ( Products[RetailPrice] ) && Products[RetailPrice] > 0 ),
+        Products[RetailPrice]
+    )
+RETURN
+DIVIDE (
+    CALCULATE ( [Total Products], FILTER ( Products, Products[RetailPrice] >= _med ) ),
+    [Total Products]
+)
+
+% Products Below Median =
+VAR _med =
+    MEDIANX (
+        FILTER ( ALLSELECTED ( Products ), NOT ISBLANK ( Products[RetailPrice] ) && Products[RetailPrice] > 0 ),
+        Products[RetailPrice]
+    )
+RETURN
+DIVIDE (
+    CALCULATE ( [Total Products], FILTER ( Products, Products[RetailPrice] < _med ) ),
+    [Total Products]
+)
+
+### Variant / assortment summaries
+
+Most Variant-Diverse Category =
+VAR catAgg =
+    ADDCOLUMNS (
+        SUMMARIZE ( Products, Products[FirstCategory] ),
+        "__Variants", SUM ( Products[VariantCount] )
+    )
+VAR topCat = TOPN ( 1, catAgg, [__Variants], DESC )
+RETURN CONCATENATEX ( topCat, Products[FirstCategory], ", " )
+
+---
 
