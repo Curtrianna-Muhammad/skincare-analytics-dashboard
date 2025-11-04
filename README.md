@@ -1,5 +1,5 @@
 
-#Sephora Skincare Analytics Dashboard  
+# Sephora Skincare Analytics Dashboard  
 [![Excel Project](https://img.shields.io/badge/View%20Excel%20Model-download-blue?style=flat-square)](data/Muhamamad_Sephora_WORKING.xlsx)
 
 > Analysis of Sephora skincare data: exploring product pricing, sentiment, and brand performance across 1.1M+ records.  
