@@ -196,8 +196,7 @@ Total Reviews         = COUNTROWS ( 'Reviews 1' )
 Total Feedback        = SUM ( 'Reviews 1'[FeedbackCount] )
 Total Retail          = SUM ( Products[RetailPrice] )
 Total Sale            = SUM ( Products[SalePrice] )
-Anchor Date           = MAX ( 'Reviews 1'[SubmissionTime] )
-
+Anchor Date           = MAX ( 'Reviews 1'[SubmissionTime) 
 ### Ratings: distribution, averages, sentiment
 1 star                = CALCULATE ( [Total Reviews], KEEPFILTERS ( 'Reviews 1'[AvgRating] = 1 ) )
 2 star                = CALCULATE ( [Total Reviews], KEEPFILTERS ( 'Reviews 1'[AvgRating] = 2 ) )
