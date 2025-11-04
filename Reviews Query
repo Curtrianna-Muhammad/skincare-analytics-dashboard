@@ -1,0 +1,24 @@
+let
+    Source = Folder.Files("C:\Users\curtr\OneDrive\Desktop\Projects\Sephora Analysis\Reviews"),
+    #"Filtered Hidden Files1" = Table.SelectRows(Source, each [Attributes]?[Hidden]? <> true),
+    #"Invoke Custom Function1" = Table.AddColumn(#"Filtered Hidden Files1", "Transform File (2)", each #"Transform File (2)"([Content])),
+    #"Renamed Columns1" = Table.RenameColumns(#"Invoke Custom Function1", {"Name", "Source.Name"}),
+    #"Removed Other Columns1" = Table.SelectColumns(#"Renamed Columns1", {"Source.Name", "Transform File (2)"}),
+    #"Expanded Table Column1" = Table.ExpandTableColumn(#"Removed Other Columns1", "Transform File (2)", Table.ColumnNames(#"Transform File (2)"(#"Sample File (2)"))),
+    #"Changed Type" = Table.TransformColumnTypes(#"Expanded Table Column1",{{"Source.Name", type text}, {"", Int64.Type}, {"author_id", Int64.Type}, {"rating", Int64.Type}, {"is_recommended", Int64.Type}, {"helpfulness", type number}, {"total_feedback_count", Int64.Type}, {"total_neg_feedback_count", Int64.Type}, {"total_pos_feedback_count", Int64.Type}, {"submission_time", type date}, {"review_text", type text}, {"review_title", type text}, {"skin_tone", type text}, {"eye_color", type text}, {"skin_type", type text}, {"hair_color", type text}, {"product_id", type text}, {"product_name", type text}, {"brand_name", type text}, {"price_usd", Int64.Type}}),
+    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"Source.Name"}),
+    #"Renamed Columns" = Table.RenameColumns(#"Removed Columns",{{"", "ReviewCount"}, {"author_id", "WriterID"}, {"rating", "AvgRating"}, {"is_recommended", "IsRecommended"}, {"helpfulness", "IsHelpful"}, {"total_feedback_count", "FeedbackCount"}, {"total_neg_feedback_count", "NegReviewCount"}, {"total_pos_feedback_count", "PosReviewCount"}, {"submission_time", "SubmissionTime"}, {"review_text", "Text"}, {"review_title", "Title"}, {"skin_tone", "SkinTone"}, {"eye_color", "EyeColor"}, {"skin_type", "SkinType"}, {"hair_color", "HairColor"}, {"product_id", "ProductID"}, {"product_name", "ProductName"}, {"brand_name", "BrandName"}, {"price_usd", "RetailPrice"}}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Renamed Columns",{{"RetailPrice", Currency.Type}}),
+    #"Replaced Errors" = Table.ReplaceErrorValues(#"Changed Type1", {{"ReviewCount", null}, {"WriterID", null}, {"AvgRating", null}, {"IsRecommended", null}, {"IsHelpful", null}, {"FeedbackCount", null}, {"NegReviewCount", null}, {"PosReviewCount", null}, {"SubmissionTime", null}, {"RetailPrice", null}}),
+    #"Reordered Columns" = Table.ReorderColumns(#"Replaced Errors",{"ProductID", "ProductName", "BrandName", "RetailPrice", "ReviewCount", "AvgRating", "IsRecommended", "IsHelpful", "FeedbackCount", "NegReviewCount", "PosReviewCount", "SubmissionTime", "WriterID",  "Title", "Text", "SkinType", "SkinTone",  "HairColor", "EyeColor"}),
+    #"Removed Duplicates" = Table.Distinct(#"Reordered Columns"),
+    #"Trimmed Text" = Table.TransformColumns(#"Removed Duplicates",{{"ProductID", Text.Trim, type text}, {"ProductName", Text.Trim, type text}, {"BrandName", Text.Trim, type text}, {"Title", Text.Trim, type text}, {"Text", Text.Trim, type text}, {"SkinType", Text.Trim, type text}, {"SkinTone", Text.Trim, type text}, {"HairColor", Text.Trim, type text}, {"EyeColor", Text.Trim, type text}}),
+    #"Kept First Rows" = Table.FirstN(#"Trimmed Text",100000),
+    #"Changed Type2" = Table.TransformColumnTypes(#"Kept First Rows",{{"SubmissionTime", type date}}),
+    #"Filtered Rows" = Table.SelectRows(#"Changed Type2", each true),
+    #"Changed Type3" = Table.TransformColumnTypes(#"Filtered Rows",{{"IsHelpful", type logical}, {"IsRecommended", type logical}}),
+    #"Renamed Columns2" = Table.RenameColumns(#"Changed Type3",{{"IsRecommended", "IsRecommended?"}, {"IsHelpful", "IsHelpful?"}}),
+    #"Filtered Rows1" = Table.SelectRows(#"Renamed Columns2", each ([EyeColor] <> "") and ([Title] <> "") and ([#"IsHelpful?"] <> null) and ([SkinType] <> "") and ([SkinTone] <> "" and [SkinTone] <> "helps remove the excess product and reduce the stickiness") and ([HairColor] <> "")),
+    #"Capitalized Each Word" = Table.TransformColumns(#"Filtered Rows1",{{"SkinType", Text.Proper, type text}, {"SkinTone", Text.Proper, type text}, {"HairColor", Text.Proper, type text}, {"EyeColor", Text.Proper, type text}})
+in
+    #"Capitalized Each Word"
