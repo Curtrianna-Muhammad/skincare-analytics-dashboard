@@ -5,9 +5,9 @@
 > Analysis of Sephora skincare data: exploring product pricing, sentiment, and brand performance across 1.1M+ records.  
 > Built entirely in Excel.
 
-> Dataset: Kaggle (Sephora Product + Reviews Dataset)
-> License: MIT License
-> Author: Curtrianna Muhammad
+* Dataset: Kaggle (Sephora Product + Reviews Dataset)
+* License: MIT License
+* Author: Curtrianna Muhammad
 
 ---
 
