@@ -1,0 +1,176 @@
+
+let
+    Source = Csv.Document(File.Contents("C:\Users\curtr\OneDrive\Desktop\Projects\Sephora Analysis\product_info.csv"),[Delimiter=",", Columns=27, Encoding=65001, QuoteStyle=QuoteStyle.None]),
+    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"product_id", type text}, {"product_name", type text}, {"brand_id", Int64.Type}, {"brand_name", type text}, {"loves_count", Int64.Type}, {"rating", type number}, {"reviews", Int64.Type}, {"size", type text}, {"variation_type", type text}, {"variation_value", type text}, {"variation_desc", type text}, {"ingredients", type text}, {"price_usd", Int64.Type}, {"value_price_usd", Int64.Type}, {"sale_price_usd", Int64.Type}, {"limited_edition", Int64.Type}, {"new", Int64.Type}, {"online_only", Int64.Type}, {"out_of_stock", Int64.Type}, {"sephora_exclusive", Int64.Type}, {"highlights", type text}, {"primary_category", type text}, {"secondary_category", type text}, {"tertiary_category", type text}, {"child_count", Int64.Type}, {"child_max_price", Int64.Type}, {"child_min_price", Int64.Type}}),
+    #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{{"product_id", "ProductID"}, {"product_name", "ProductName"}, {"brand_id", "BrandID"}, {"brand_name", "BrandName"}, {"loves_count", "LovesCount"}}),
+    #"Reordered Columns" = Table.ReorderColumns(#"Renamed Columns",{"ProductID", "ProductName", "BrandID", "BrandName", "rating", "reviews", "LovesCount", "size", "variation_type", "variation_value", "variation_desc", "ingredients", "price_usd", "value_price_usd", "sale_price_usd", "limited_edition", "new", "online_only", "out_of_stock", "sephora_exclusive", "highlights", "primary_category", "secondary_category", "tertiary_category", "child_count", "child_max_price", "child_min_price"}),
+    #"Renamed Columns1" = Table.RenameColumns(#"Reordered Columns",{{"rating", "Rating"}}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Renamed Columns1",{{"Rating", Int64.Type}}),
+    #"Renamed Columns2" = Table.RenameColumns(#"Changed Type1",{{"Rating", "AvgRating"}, {"reviews", "ReviewCount"}, {"size", "Size"}, {"variation_type", "Type"}, {"variation_desc", "Description"}, {"ingredients", "Ingredients"}, {"price_usd", "Retail Price"}, {"sale_price_usd", "Sale Price"}, {"limited_edition", "LimitedEdition"}}),
+    #"Changed Type2" = Table.TransformColumnTypes(#"Renamed Columns2",{{"LimitedEdition", type logical}}),
+    #"Renamed Columns3" = Table.RenameColumns(#"Changed Type2",{{"new", "New?"}, {"LimitedEdition", "LimitedEdition?"}}),
+    #"Changed Type3" = Table.TransformColumnTypes(#"Renamed Columns3",{{"New?", type logical}}),
+    #"Renamed Columns4" = Table.RenameColumns(#"Changed Type3",{{"online_only", "OnlineOnly?"}}),
+    #"Changed Type4" = Table.TransformColumnTypes(#"Renamed Columns4",{{"OnlineOnly?", type logical}}),
+    #"Renamed Columns5" = Table.RenameColumns(#"Changed Type4",{{"out_of_stock", "OutOfStock?"}}),
+    #"Changed Type5" = Table.TransformColumnTypes(#"Renamed Columns5",{{"OutOfStock?", type logical}}),
+    #"Renamed Columns6" = Table.RenameColumns(#"Changed Type5",{{"sephora_exclusive", "SephoraExclusive?"}}),
+    #"Changed Type6" = Table.TransformColumnTypes(#"Renamed Columns6",{{"SephoraExclusive?", type logical}}),
+    #"Renamed Columns7" = Table.RenameColumns(#"Changed Type6",{{"highlights", "FeatureTags"}, {"value_price_usd", "MarketValue"}}),
+    #"Changed Type7" = Table.TransformColumnTypes(#"Renamed Columns7",{{"Sale Price", Currency.Type}, {"MarketValue", Currency.Type}, {"Retail Price", Currency.Type}}),
+    #"Renamed Columns8" = Table.RenameColumns(#"Changed Type7",{{"primary_category", "MainCategory"}, {"secondary_category", "SubCategory"}, {"tertiary_category", "CategoryDetail"}, {"child_count", "VariantCount"}, {"child_max_price", "VariantMaxPrice"}, {"child_min_price", "VariantMinPrice"}, {"Size", "ProductSize"}, {"Type", "ProductType"}, {"variation_value", "ProductValue"}, {"Description", "ProductDescription"}}),
+    #"Filtered Rows" = Table.SelectRows(#"Renamed Columns8", each true),
+    #"Removed Errors" = Table.RemoveRowsWithErrors(#"Filtered Rows"),
+    #"Removed Duplicates" = Table.Distinct(#"Removed Errors"),
+    #"Inserted Subtraction" = Table.AddColumn(#"Removed Duplicates", "Subtraction", each [Retail Price] - [Sale Price], Currency.Type),
+    #"Renamed Columns9" = Table.RenameColumns(#"Inserted Subtraction",{{"Subtraction", "DiscountAmount"}, {"Retail Price", "RetailPrice"}, {"Sale Price", "SalePrice"}}),
+    #"Inserted Subtraction1" = Table.AddColumn(#"Renamed Columns9", "Subtraction", each [MarketValue] - [RetailPrice], Currency.Type),
+    #"Renamed Columns10" = Table.RenameColumns(#"Inserted Subtraction1",{{"Subtraction", "PerceivedValueGap"}}),
+    #"Reordered Columns1" = Table.ReorderColumns(#"Renamed Columns10",{"ProductID", "ProductName", "BrandID", "BrandName", "MainCategory", "SubCategory", "CategoryDetail",  "ProductSize", "ProductType", "ProductValue", "ProductDescription", "Ingredients", "RetailPrice", "SalePrice", "DiscountAmount", "MarketValue", "PerceivedValueGap", "VariantCount", "VariantMaxPrice", "VariantMinPrice", "FeatureTags", "LimitedEdition?", "New?", "SephoraExclusive?",  "OnlineOnly?", "OutOfStock?", "LovesCount", "ReviewCount", "AvgRating" }),
+    #"Inserted Subtraction2" = Table.AddColumn(#"Reordered Columns1", "Subtraction", each [VariantMaxPrice] - [VariantMinPrice], Int64.Type),
+    #"Renamed Columns11" = Table.RenameColumns(#"Inserted Subtraction2",{{"Subtraction", "PriceRange"}}),
+    #"Reordered Columns2" = Table.ReorderColumns(#"Renamed Columns11",{"ProductID", "ProductName", "BrandID", "BrandName", "MainCategory", "SubCategory", "CategoryDetail", "ProductSize", "ProductType", "ProductValue", "ProductDescription", "Ingredients", "RetailPrice", "SalePrice", "DiscountAmount", "MarketValue", "PerceivedValueGap", "VariantCount", "VariantMaxPrice", "VariantMinPrice", "PriceRange", "FeatureTags", "LimitedEdition?", "New?", "SephoraExclusive?", "OnlineOnly?", "OutOfStock?", "LovesCount", "ReviewCount", "AvgRating"}),
+    #"Changed Type8" = Table.TransformColumnTypes(#"Reordered Columns2",{{"VariantMaxPrice", Currency.Type}, {"VariantMinPrice", Currency.Type}, {"PriceRange", Currency.Type}}),
+    #"Replaced Errors" = Table.ReplaceErrorValues(#"Changed Type8", {{"PriceRange", null}}),
+    #"Renamed Columns12" = Table.RenameColumns(#"Replaced Errors",{{"MainCategory", "FirstCategory"}, {"SubCategory", "SecondCategory"}, {"CategoryDetail", "ThirdCategory"}}),
+   
+    // Add Volume_mL (numeric) and SizeCategory (bucket)
+#"Added Volume and SizeCategory" =
+    Table.AddColumn(
+        #"Renamed Columns12",
+        "Volume_mL",
+        each
+            let
+                s0     = Text.From([ProductSize]),
+                s      = Text.Lower(Text.Trim(s0)),
+
+                // helper: read the number immediately before a unit token
+                GetNumberBefore = (txt as text, token as text) as nullable number =>
+                    let
+                        pos      = Text.PositionOf(txt, token),
+                        result   =
+                            if pos < 0 then
+                                null
+                            else
+                                let
+                                    left     = Text.TrimEnd(Text.Range(txt, 0, pos)),
+                                    // take the last whitespace-separated chunk before the unit
+                                    lastPart = Text.AfterDelimiter(Text.Reverse(left), " ", {0, RelativePosition.FromEnd}),
+                                    chunk    = Text.Reverse(lastPart),
+                                    num      = try Number.From(chunk) otherwise null
+                                in
+                                    num
+                    in
+                        result,
+
+                mlNum = GetNumberBefore(s, "ml"),
+                ozNum = GetNumberBefore(s, "oz"),
+                gNum  = GetNumberBefore(s, " g"),
+
+                volML =
+                    if mlNum <> null then mlNum
+                    else if ozNum <> null then ozNum * 29.5735
+                    else if gNum  <> null then gNum * 1.0   // approx: 1 g ≈ 1 mL for cosmetics
+                    else null
+            in
+                volML,
+        type number
+    ),
+
+    // bucket by volume (tweak thresholds as you like)
+    #"Added SizeCategory" =
+        Table.AddColumn(
+            #"Added Volume and SizeCategory",
+            "SizeCategory",
+            each
+                let v = [Volume_mL] in
+                    if v = null then "Unknown"
+                    else if v < 15 then "Travel / Mini"
+                    else if v < 30 then "Small"
+                    else if v < 60 then "Standard"
+                    else if v < 120 then "Large"
+                    else "XL",
+            type text
+        ),
+    #"Filtered Rows1" = Table.SelectRows(#"Added SizeCategory", each true),
+    #"Reordered Columns3" = Table.ReorderColumns(#"Filtered Rows1",{"ProductID", "ProductName", "BrandID", "BrandName", "FirstCategory", "SecondCategory", "ThirdCategory", "ProductSize", "SizeCategory", "ProductType", "ProductValue", "ProductDescription", "Ingredients", "RetailPrice", "SalePrice", "DiscountAmount", "MarketValue", "PerceivedValueGap", "VariantCount", "VariantMaxPrice", "VariantMinPrice", "PriceRange", "FeatureTags", "LimitedEdition?", "New?", "SephoraExclusive?", "OnlineOnly?", "OutOfStock?", "LovesCount", "ReviewCount", "AvgRating", "Volume_mL"}),
+    #"Filtered Rows2" = Table.SelectRows(#"Reordered Columns3", each ([ProductType] = "Type")),
+
+// --- helpers (define once, above the steps that use them) ---
+ToLowerTrim = (t as any) as text => Text.Lower(Text.Trim(Text.From(t))),
+
+GetNumberBeforeToken = (txt as text, token as text) as nullable number =>
+    let
+        pos = Text.PositionOf(txt, token, Occurrence.First),
+        res = if pos < 0 then null else
+            let
+                left     = Text.Range(txt, 0, pos),
+                clean1   = Text.Replace(Text.Replace(Text.Replace(left,"fl",""),"fluid",""),"fl.",""),
+                clean2   = Text.Replace(Text.Replace(clean1,"/"," "),",","."),
+                pieces   = List.Select(Text.Split(clean2," "), each _ <> ""),
+                nums     = List.Select(List.Transform(pieces, each try Number.From(_) otherwise null), each _ <> null)
+            in if List.IsEmpty(nums) then null else List.Last(nums)
+    in  res,
+
+ParseVolumeML = (sizeText as any) as nullable number =>
+    let
+        s     = ToLowerTrim(sizeText),
+        mlNum = GetNumberBeforeToken(s,"ml"),
+        ozNum = if mlNum = null then GetNumberBeforeToken(s,"oz") else null,
+        gNum  = if mlNum = null and ozNum = null then GetNumberBeforeToken(s," g") else null,
+        volML = if      mlNum <> null then mlNum
+                else if ozNum <> null then ozNum * 29.5735
+                else if gNum  <> null then gNum * 1.0
+                else null
+    in  volML,
+
+// -------- 1) volume from ProductSize --------
+#"Added Volume_from_ProductSize" =
+    Table.AddColumn(
+        #"Renamed Columns12",                    // <-- your real previous step
+        "Volume_from_ProductSize",
+        each ParseVolumeML([ProductSize]),
+        type number
+    ),
+
+// -------- 2) volume from ProductValue (if it carries size) --------
+#"Added Volume_from_ProductValue" =
+    Table.AddColumn(
+        #"Added Volume_from_ProductSize",        // <-- chain to prior step
+        "Volume_from_ProductValue",
+        each ParseVolumeML([ProductValue]),
+        type number
+    ),
+
+// -------- 3) final coalesced volume --------
+#"Added FinalVolume_mL" =
+    Table.AddColumn(
+        #"Added Volume_from_ProductValue",
+        "FinalVolume_mL",
+        each if [Volume_from_ProductSize] <> null then [Volume_from_ProductSize] else [Volume_from_ProductValue],
+        type number
+    ),
+
+// -------- 4) final size category --------
+#"Added FinalSizeCategory" =
+    Table.AddColumn(
+        #"Added FinalVolume_mL",
+        "FinalSizeCategory",
+        each let v = [FinalVolume_mL] in
+            if v = null then "Unknown"
+            else if v < 15  then "Travel / Mini"
+            else if v < 30  then "Small"
+            else if v < 60  then "Standard"
+            else if v < 120 then "Large"
+            else "XL",
+        type text
+    ),
+    Volume = Table.RenameColumns(#"Added FinalSizeCategory",{{"Volume_from_ProductSize", "ProductSizeVolume"}, {"Volume_from_ProductValue", "ProductValueVolume"}, {"FinalVolume_mL", "FinalVolumeML"}}),
+    #"Filtered Rows3" = Table.SelectRows(Volume, each ([FirstCategory] <> "") and ([SecondCategory] <> "") and ([ThirdCategory] <> "") and ([Ingredients] <> "") and ([FeatureTags] <> "")),
+    #"Price Tier" = Table.AddColumn(#"Filtered Rows3", "Price Tier", each if [RetailPrice] >= 60 then "Premium"
+else if [RetailPrice] >= 30 then "Midrange"
+else "Budget"),
+    #"Reordered Columns4" = Table.ReorderColumns(#"Price Tier",{"ProductID", "ProductName", "BrandID", "BrandName", "FirstCategory", "SecondCategory", "ThirdCategory", "ProductSize", "ProductType", "ProductValue", "ProductDescription", "Ingredients", "RetailPrice", "SalePrice", "Price Tier", "DiscountAmount", "MarketValue", "PerceivedValueGap", "VariantCount", "VariantMaxPrice", "VariantMinPrice", "PriceRange", "FeatureTags", "LimitedEdition?", "New?", "SephoraExclusive?", "OnlineOnly?", "OutOfStock?", "LovesCount", "ReviewCount", "AvgRating", "ProductSizeVolume", "ProductValueVolume", "FinalVolumeML", "FinalSizeCategory"})
+in
+    #"Reordered Columns4"
