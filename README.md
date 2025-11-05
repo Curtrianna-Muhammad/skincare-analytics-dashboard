@@ -12,7 +12,7 @@
 <h2>📸 Screenshots</h2>
 
 <p align="center">
-  <img src="images/01_dashboard-overview.png" width="850"><br/>
+  <img width="2398" height="420" alt="image" src="https://github.com/user-attachments/assets/5da842a4-220b-49cc-9502-214a05de3f73" />
   <i>Executive summary: revenue, discount efficiency, and top brands.</i>
 </p>
 
