@@ -1,6 +1,6 @@
 
 # Sephora Skincare Analytics Dashboard  
-[![Excel Project](https://1drv.ms/x/c/9b69c1b912f3f550/EfwP4tkxFLtIqVm7O8ebiiYBwWV6xpEvLCEFqMA_y3ea7w?e=CJhKdG)]([data/Muhamamad_Sephora_WORKING.xlsx](https://1drv.ms/x/c/9b69c1b912f3f550/EfwP4tkxFLtIqVm7O8ebiiYBwWV6xpEvLCEFqMA_y3ea7w?e=CJhKdG))
+[![Excel Project](https://img.shields.io/badge/View%20Excel%20Model-download-blue?style=flat-square)]([data/Muhamamad_Sephora_WORKING.xlsx](https://1drv.ms/x/c/9b69c1b912f3f550/EfwP4tkxFLtIqVm7O8ebiiYBwWV6xpEvLCEFqMA_y3ea7w?e=CJhKdG))
 
 > Analysis of Sephora skincare data: exploring product pricing, sentiment, and brand performance across 1.1M+ records.  
 > Built entirely in Excel.
