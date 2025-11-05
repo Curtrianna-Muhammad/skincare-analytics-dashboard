@@ -9,6 +9,47 @@
 * License: MIT License
 * Author: Curtrianna Muhammad
 
+<h2>📸 Screenshots</h2>
+
+<p align="center">
+  <img src="images/01_dashboard-overview.png" width="850"><br/>
+  <i>Executive summary: revenue, discount efficiency, and top brands.</i>
+</p>
+
+<p align="center">
+  <img src="images/02_product-segmentation.png" width="850"><br/>
+  <i>Pricing tiers, variant price spread, and size mix.</i>
+</p>
+
+<p align="center">
+  <img src="images/03_consumer-behavior.png" width="850"><br/>
+  <i>Sentiment & engagement: Avg Rating, % Recommended, % Helpful.</i>
+</p>
+
+<details>
+  <summary><b>🔧 Data pipeline & model (Power Query + Data Model)</b></summary>
+  <p align="center"><img src="<img width="2444" height="423" alt="image" src="https://github.com/user-attachments/assets/0683f642-57af-4570-a0d9-48b288ac3dc9" />
+><br/>
+  <i>Products cleaning: PascalCase, unit parsing, discount fields, size mapping.</i></p>
+  <p align="center"><img src="images/12_pq-reviews-steps.png" width="850"><br/>
+  <i>Reviews cleaning: Booleans, demographics normalization, date typing.</i></p>
+  <p align="center"><img src="images/13_pq-map-demographics.png" width="850"><br/>
+  <i>Attribute–Value map with Kept/Removed status.</i></p>
+  <p align="center"><img src="images/14_pq-map-sizing.png" width="850"><br/>
+  <i>FinalVolumeML → FinalSizeCategory mapping.</i></p>
+  <p align="center"><img src="images/15_data-model-diagram.png" width="850"><br/>
+  <i>Products ↔ Reviews, Calendar ↔ Reviews relationships.</i></p>
+</details>
+
+<details>
+  <summary><b>🧮 Measures & utilities</b></summary>
+  <p align="center"><img src="images/21_dax-measures.png" width="850"><br/>
+  <i>Central DAX catalog powering KPIs and targets.</i></p>
+  <p align="center"><img src="images/22_calendar-table.png" width="850"><br/>
+  <i>Continuous Date dimension for time intelligence.</i></p>
+</details>
+
+
 ---
 
 ## Overview
