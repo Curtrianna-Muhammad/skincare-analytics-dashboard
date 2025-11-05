@@ -13,6 +13,8 @@
 
 <p align="center">
   <img width="2398" height="420" alt="image" src="https://github.com/user-attachments/assets/5da842a4-220b-49cc-9502-214a05de3f73" />
+  <img width="2653" height="937" alt="image" src="https://github.com/user-attachments/assets/ca522910-8c7b-4b59-9d3e-3e3911b2ea4d" />
+  <img width="2749" height="984" alt="image" src="https://github.com/user-attachments/assets/736a4c43-b653-4bc4-a2a6-f2da7fcae243" />
   <i>Executive summary: revenue, discount efficiency, and top brands.</i>
 </p>
 
